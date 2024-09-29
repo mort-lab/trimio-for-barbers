@@ -7,6 +7,8 @@ import {
   Menu,
   LogOut,
   LoaderCircle,
+  Settings,
+  ScissorsIcon,
 } from "lucide-react";
 
 export const Icons = {
@@ -19,4 +21,6 @@ export const Icons = {
   menu: Menu,
   logout: LogOut,
   spinner: LoaderCircle,
+  settings: Settings,
+  barbershop: ScissorsIcon,
 };

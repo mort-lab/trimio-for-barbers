@@ -43,10 +43,11 @@ export default function AuthForm() {
       if (type === "login") {
         await login(email, password);
         router.push("/dashboard");
-      } else {
-        await signup(email, password);
-        router.push("/onboarding"); // Redirect to onboarding after successful signup
       }
+      // } else {
+      //   await signup(email, password);
+      //   router.push("/onboarding"); // Redirect to onboarding after successful signup
+      // }
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

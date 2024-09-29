@@ -34,6 +34,8 @@ interface AuthResponse {
 }
 
 export const api = {
+  fetchWithAuth, // Add this line to export fetchWithAuth
+
   login: (email: string, password: string): Promise<AuthResponse> =>
     fetchWithAuth<AuthResponse>("/auth/login", {
       method: "POST",

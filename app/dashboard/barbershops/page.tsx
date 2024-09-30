@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -10,22 +14,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  Dialog as DialogRoot,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search, Scissors } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+
+interface BarberProfile {
+  id: string;
+  userId: string;
+  barbershopId: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface Barbershop {
   id: string;
@@ -35,9 +46,10 @@ interface Barbershop {
   state: string;
   zipCode: string;
   additionalInfo?: string;
+  barberProfiles: BarberProfile[];
 }
 
-export default function Barbershops() {
+export default function BarbershopManagement() {
   const [barbershops, setBarbershops] = useState<Barbershop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +60,11 @@ export default function Barbershops() {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      router.push("/auth");
     } else if (!authLoading && user) {
       fetchBarbershops();
     }
@@ -61,11 +73,10 @@ export default function Barbershops() {
   const fetchBarbershops = async () => {
     setIsLoading(true);
     try {
-      const data = await api.fetchWithAuth<Barbershop[]>("/barbershops");
+      const data = await api.fetchBarbershops();
       setBarbershops(data);
     } catch (err) {
       setError("Error fetching barbershops");
-      console.error(err);
       toast({
         title: "Error",
         description: "Failed to fetch barbershops. Please try again.",
@@ -79,14 +90,19 @@ export default function Barbershops() {
   const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const barbershopData = Object.fromEntries(formData);
+    const barbershopData = {
+      name: formData.get("name")?.toString() || "",
+      address: formData.get("address")?.toString() || "",
+      city: formData.get("city")?.toString() || "",
+      state: formData.get("state")?.toString() || "",
+      zipCode: formData.get("zipCode")?.toString() || "",
+      additionalInfo: formData.get("additionalInfo")?.toString() || "",
+    };
+
+    if (!validateBarbershopData(barbershopData)) return;
 
     try {
-      await api.fetchWithAuth("/barbershops", {
-        method: "POST",
-        body: JSON.stringify(barbershopData),
-      });
-
+      await api.createBarbershop(barbershopData);
       await fetchBarbershops();
       setIsCreateDialogOpen(false);
       toast({
@@ -94,7 +110,6 @@ export default function Barbershops() {
         description: "Barbershop created successfully!",
       });
     } catch (err) {
-      console.error("Error creating barbershop:", err);
       toast({
         title: "Error",
         description: "Failed to create barbershop. Please try again.",
@@ -110,12 +125,10 @@ export default function Barbershops() {
     const formData = new FormData(event.currentTarget);
     const barbershopData = Object.fromEntries(formData);
 
-    try {
-      await api.fetchWithAuth(`/barbershops/${currentBarbershop.id}`, {
-        method: "PUT",
-        body: JSON.stringify(barbershopData),
-      });
+    if (!validateBarbershopData(barbershopData)) return;
 
+    try {
+      await api.updateBarbershop(currentBarbershop.id, barbershopData);
       await fetchBarbershops();
       setIsEditDialogOpen(false);
       toast({
@@ -123,7 +136,6 @@ export default function Barbershops() {
         description: "Barbershop updated successfully!",
       });
     } catch (err) {
-      console.error("Error updating barbershop:", err);
       toast({
         title: "Error",
         description: "Failed to update barbershop. Please try again.",
@@ -136,17 +148,13 @@ export default function Barbershops() {
     if (!confirm("Are you sure you want to delete this barbershop?")) return;
 
     try {
-      await api.fetchWithAuth(`/barbershops/${id}`, {
-        method: "DELETE",
-      });
-
+      await api.deleteBarbershop(id);
       await fetchBarbershops();
       toast({
         title: "Success",
         description: "Barbershop deleted successfully!",
       });
     } catch (err) {
-      console.error("Error deleting barbershop:", err);
       toast({
         title: "Error",
         description: "Failed to delete barbershop. Please try again.",
@@ -158,13 +166,9 @@ export default function Barbershops() {
   const handleSearch = async () => {
     setIsLoading(true);
     try {
-      const data = await api.fetchWithAuth<Barbershop[]>(
-        `/barbershops/search?city=${searchTerm}&zipCode=${searchTerm}`
-      );
+      const data = await api.searchBarbershops(searchTerm);
       setBarbershops(data);
     } catch (err) {
-      setError("Error searching barbershops");
-      console.error(err);
       toast({
         title: "Error",
         description: "Failed to search barbershops. Please try again.",
@@ -173,6 +177,24 @@ export default function Barbershops() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const validateBarbershopData = (data: any) => {
+    if (
+      data.name.length < 3 ||
+      data.address.length < 5 ||
+      data.city.length < 2 ||
+      data.state.length < 2 ||
+      data.zipCode.length < 5
+    ) {
+      toast({
+        title: "Validation Error",
+        description: "Please ensure all fields meet the required lengths.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
   };
 
   const BarbershopForm = ({
@@ -230,14 +252,15 @@ export default function Barbershops() {
     </form>
   );
 
-  if (authLoading || isLoading)
+  if (authLoading || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="mr-2 h-16 w-16 animate-spin" />
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
@@ -249,17 +272,17 @@ export default function Barbershops() {
         </div>
       </div>
     );
+  }
 
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Your Barbershops</h1>
-        <Button onClick={logout}>Logout</Button>
       </div>
       <div className="flex justify-between mb-6">
         <div className="flex gap-2 w-1/2">
           <Input
-            placeholder="Search by city or zip code"
+            placeholder="Search barbershops..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-grow"
@@ -268,7 +291,10 @@ export default function Barbershops() {
             <Search className="mr-2 h-4 w-4" /> Search
           </Button>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogRoot
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" /> Create New Barbershop
@@ -283,13 +309,35 @@ export default function Barbershops() {
             </DialogHeader>
             <BarbershopForm onSubmit={handleCreate} />
           </DialogContent>
-        </Dialog>
+        </DialogRoot>
       </div>
       {barbershops.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-xl text-gray-600">
-            You dont have any barbershops yet. Create a new one to get started!
+          <Scissors className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">No Barbershops Yet</h2>
+          <p className="text-gray-600 mb-4">
+            You haven't added any barbershops. Create your first one to get
+            started!
           </p>
+          <DialogRoot
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Create Your First Barbershop
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Barbershop</DialogTitle>
+                <DialogDescription>
+                  Enter the details for your new barbershop.
+                </DialogDescription>
+              </DialogHeader>
+              <BarbershopForm onSubmit={handleCreate} />
+            </DialogContent>
+          </DialogRoot>
         </div>
       ) : (
         <Table>
@@ -300,6 +348,7 @@ export default function Barbershops() {
               <TableHead>City</TableHead>
               <TableHead>State</TableHead>
               <TableHead>Zip Code</TableHead>
+              <TableHead>Account Type</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -312,8 +361,16 @@ export default function Barbershops() {
                 <TableCell>{barbershop.state}</TableCell>
                 <TableCell>{barbershop.zipCode}</TableCell>
                 <TableCell>
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {barbershop.barberProfiles[0]?.role || "N/A"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
                   <div className="flex gap-2">
-                    <Dialog
+                    <DialogRoot
                       open={isEditDialogOpen}
                       onOpenChange={setIsEditDialogOpen}
                     >
@@ -337,7 +394,7 @@ export default function Barbershops() {
                           onSubmit={handleEdit}
                         />
                       </DialogContent>
-                    </Dialog>
+                    </DialogRoot>
                     <Button
                       variant="destructive"
                       onClick={() => handleDelete(barbershop.id)}

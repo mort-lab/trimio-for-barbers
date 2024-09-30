@@ -4,7 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { Check, ChevronsUpDown, Scissors, Sun, Moon } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  Scissors,
+  Sun,
+  Moon,
+  PlusCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +20,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -24,12 +32,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/ui/icons";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import useAuthStore from "@/store/authStore";
 
-const barbershops = [
-  { value: "classic-cuts", label: "Classic Cuts" },
-  { value: "modern-styles", label: "Modern Styles" },
-  { value: "gentleman-grooming", label: "Gentleman's Grooming" },
-];
+interface Barbershop {
+  id: string;
+  name: string;
+}
 
 export default function DashboardLayout({
   children,
@@ -39,9 +49,32 @@ export default function DashboardLayout({
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState(barbershops[0]?.value || "");
+  const [open, setOpen] = useState(false);
+  const [barbershops, setBarbershops] = useState<Barbershop[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const activeBarbershop = useAuthStore((state) => state.activeBarbershop);
+  const setActiveBarbershop = useAuthStore(
+    (state) => state.setActiveBarbershop
+  );
   const { setTheme, theme } = useTheme();
+
+  useEffect(() => {
+    const fetchBarbershops = async () => {
+      setIsLoading(true);
+      try {
+        const barbershopData = await api.fetchBarbershops();
+        setBarbershops(barbershopData);
+        if (barbershopData.length > 0 && !activeBarbershop) {
+          setActiveBarbershop(barbershopData[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching barbershops:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBarbershops();
+  }, [activeBarbershop, setActiveBarbershop]);
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: Icons.dashboard },
@@ -61,6 +94,16 @@ export default function DashboardLayout({
     { name: "Settings", href: "/dashboard/settings", icon: Icons.settings },
   ];
 
+  const handleLogout = () => {
+    logout();
+    router.push("/auth");
+  };
+
+  const handleCreateBarbershop = () => {
+    router.push("/dashboard/barbershops");
+    setOpen(false);
+  };
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[280px_1fr]">
       <div className="hidden border-r border-border bg-card text-card-foreground md:block">
@@ -73,7 +116,7 @@ export default function DashboardLayout({
               <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
                 <Scissors className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-lg">Frimio for barbers</span>
+              <span className="text-lg">Trimio for barbers</span>
             </Link>
           </div>
           <ScrollArea className="flex-grow px-3">
@@ -86,9 +129,11 @@ export default function DashboardLayout({
                     aria-expanded={open}
                     className="w-full justify-between"
                   >
-                    {barbershops.find(
-                      (barbershop) => barbershop.value === value
-                    )?.label || "Select barbershop..."}
+                    {isLoading
+                      ? "Loading..."
+                      : barbershops.length > 0
+                      ? activeBarbershop?.name || "Select barbershop..."
+                      : "No barbershops"}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -98,29 +143,38 @@ export default function DashboardLayout({
                       placeholder="Search barbershop..."
                       className="h-9"
                     />
-                    <CommandEmpty>No barbershop found.</CommandEmpty>
-                    <CommandGroup>
-                      {barbershops.map((barbershop) => (
-                        <CommandItem
-                          key={barbershop.value}
-                          value={barbershop.value}
-                          onSelect={(currentValue) => {
-                            setValue(currentValue);
-                            setOpen(false);
-                          }}
-                        >
-                          {barbershop.label}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              value === barbershop.value
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                    <CommandList>
+                      <CommandEmpty>No barbershop found.</CommandEmpty>
+                      <CommandGroup>
+                        {barbershops.length > 0 ? (
+                          barbershops.map((barbershop) => (
+                            <CommandItem
+                              key={barbershop.id}
+                              value={barbershop.id}
+                              onSelect={() => {
+                                setActiveBarbershop(barbershop);
+                                setOpen(false);
+                              }}
+                            >
+                              {barbershop.name}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  activeBarbershop?.id === barbershop.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))
+                        ) : (
+                          <CommandItem onSelect={handleCreateBarbershop}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create your first barbershop
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
@@ -170,8 +224,9 @@ export default function DashboardLayout({
             <Button
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
               variant="secondary"
+              onClick={handleLogout}
             >
-              Upgrade to Pro
+              Logout
             </Button>
           </div>
           <div className="p-4 border-t border-border">

@@ -1,10 +1,15 @@
 "use client";
 
-import { useAuth } from "@/lib/auth";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
+import useAuthStore from "@/store/authStore";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -16,262 +21,393 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Trash2, Edit, Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, Plus, Search, Calendar as CalendarIcon } from "lucide-react";
 
-type Appointment = {
-  id: number;
-  clientName: string;
-  service: string;
-  date: string;
-  time: string;
-};
+interface Appointment {
+  id: string;
+  clientId: string;
+  barberProfileId: string;
+  appointmentDate: string;
+  status: string;
+  barbershopId: string;
+  client: {
+    id: string;
+    email: string;
+  };
+  barberProfile: {
+    id: string;
+    user: {
+      email: string;
+    };
+  };
+  services: {
+    id: string;
+    appointmentId: string;
+    serviceId: string;
+    service: {
+      id: string;
+      serviceName: string;
+      description: string;
+      price: number;
+      duration: number;
+      category: string;
+      imageUrl: string;
+      isActive: boolean;
+    };
+  }[];
+  barbershop: {
+    id: string;
+    name: string;
+  };
+}
+
+interface Service {
+  id: string;
+  serviceName: string;
+  price: number;
+  duration: number;
+}
 
 export default function Appointments() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const router = useRouter();
+  const { user } = useAuth();
+  const activeBarbershop = useAuthStore((state) => state.activeBarbershop);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!user) {
       router.push("/auth");
-    } else if (user) {
+    } else if (activeBarbershop) {
       fetchAppointments();
+      fetchServices();
     }
-  }, [user, loading, router]);
+  }, [user, activeBarbershop, router, page]);
 
   const fetchAppointments = async () => {
     setIsLoading(true);
     try {
-      // In a real application, you would fetch this data from your API
-      // const response = await fetch(`/api/appointments/barber/${user.id}`);
-      // const data = await response.json();
-      // setAppointments(data);
-
-      // Placeholder data
-      setAppointments([
-        {
-          id: 1,
-          clientName: "John Doe",
-          service: "Haircut",
-          date: "2023-06-15",
-          time: "14:00",
-        },
-        {
-          id: 2,
-          clientName: "Jane Smith",
-          service: "Beard Trim",
-          date: "2023-06-15",
-          time: "15:30",
-        },
-        {
-          id: 3,
-          clientName: "Mike Johnson",
-          service: "Hair Coloring",
-          date: "2023-06-16",
-          time: "10:00",
-        },
-      ]);
-    } catch (error) {
-      console.error("Failed to fetch appointments:", error);
-    }
-    setIsLoading(false);
-  };
-
-  const handleEdit = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this appointment?")) {
-      try {
-        // In a real application, you would call your API to delete the appointment
-        // await fetch(`/api/appointments/${id}`, { method: 'DELETE' });
-        setAppointments(appointments.filter((app) => app.id !== id));
-      } catch (error) {
-        console.error("Failed to delete appointment:", error);
-      }
-    }
-  };
-
-  const handleSave = async (appointment: Appointment) => {
-    try {
-      // In a real application, you would call your API to update or create the appointment
-      // const response = await fetch(`/api/appointments/${appointment.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(appointment),
-      // });
-      // const updatedAppointment = await response.json();
-
-      // Placeholder update logic
-      const updatedAppointments = appointments.map((app) =>
-        app.id === appointment.id ? appointment : app
+      const data = await api.fetchWithAuth<Appointment[]>(
+        `/appointments/barbershop/${activeBarbershop?.id}?date=${format(
+          new Date(),
+          "yyyy-MM-dd"
+        )}&page=${page}&limit=${limit}`
       );
-      setAppointments(updatedAppointments);
-      setIsEditDialogOpen(false);
-      setIsNewDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to save appointment:", error);
+      setAppointments(data);
+      setError(null);
+    } catch (err) {
+      setError("Error fetching appointments");
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading || isLoading) {
+  const fetchServices = async () => {
+    try {
+      const data = await api.fetchWithAuth<Service[]>(
+        `/services/barbershop/${activeBarbershop?.id}`
+      );
+      setServices(data);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch services. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateAppointment = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    if (!selectedDate || selectedServices.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select a date and at least one service.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const appointmentData = {
+      barberId: user?.id,
+      serviceIds: selectedServices,
+      barbershopId: activeBarbershop?.id,
+      appointmentDate: selectedDate.toISOString(),
+    };
+
+    try {
+      await api.fetchWithAuth("/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appointmentData),
+      });
+      await fetchAppointments();
+      setIsCreateDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Appointment created successfully!",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to create appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateAppointment = async (id: string, status: string) => {
+    try {
+      await api.fetchWithAuth(`/appointments/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      await fetchAppointments();
+      toast({
+        title: "Success",
+        description: "Appointment updated successfully!",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to update appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAppointment = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this appointment?")) return;
+
+    try {
+      await api.fetchWithAuth(`/appointments/${id}`, { method: "DELETE" });
+      await fetchAppointments();
+      toast({
+        title: "Success",
+        description: "Appointment deleted successfully!",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to delete appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        Loading...
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+          <p>{error}</p>
+          <Button onClick={fetchAppointments} className="mt-4">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Appointments</h1>
-        <Button onClick={() => setIsNewDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> New Appointment
+        <h1 className="text-3xl font-bold">
+          Appointments for {activeBarbershop?.name}
+        </h1>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Create New Appointment
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Appointment</DialogTitle>
+              <DialogDescription>
+                Enter the details for the new appointment.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateAppointment} className="space-y-4">
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="rounded-md border"
+                />
+              </div>
+              <div>
+                <Label htmlFor="services">Services</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setSelectedServices([...selectedServices, value])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select services" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.serviceName} - ${service.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Selected Services</Label>
+                <ul>
+                  {selectedServices.map((serviceId) => {
+                    const service = services.find((s) => s.id === serviceId);
+                    return (
+                      <li
+                        key={serviceId}
+                        className="flex justify-between items-center"
+                      >
+                        <span>
+                          {service?.serviceName} - ${service?.price}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setSelectedServices(
+                              selectedServices.filter((id) => id !== serviceId)
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <Button type="submit">Create Appointment</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+      {appointments.length === 0 ? (
+        <div className="text-center py-10">
+          <h2 className="text-2xl font-semibold mb-2">No Appointments</h2>
+          <p className="text-gray-600 mb-4">
+            There are no appointments scheduled for this barbershop.
+          </p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Barber</TableHead>
+              <TableHead>Services</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {appointments.map((appointment) => (
+              <TableRow key={appointment.id}>
+                <TableCell>
+                  {format(new Date(appointment.appointmentDate), "PPP")}
+                </TableCell>
+                <TableCell>{appointment.client.email}</TableCell>
+                <TableCell>{appointment.barberProfile.user.email}</TableCell>
+                <TableCell>
+                  {appointment.services.map((service) => (
+                    <div key={service.id}>
+                      {service.service.serviceName} - ${service.service.price}
+                    </div>
+                  ))}
+                </TableCell>
+                <TableCell>{appointment.status}</TableCell>
+                <TableCell>
+                  <Select
+                    onValueChange={(value) =>
+                      handleUpdateAppointment(appointment.id, value)
+                    }
+                    defaultValue={appointment.status}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Update status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => handleDeleteAppointment(appointment.id)}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      <div className="mt-4 flex justify-between">
+        <Button
+          onClick={() => setPage(page > 1 ? page - 1 : 1)}
+          disabled={page === 1}
+        >
+          Previous
+        </Button>
+        <Button
+          onClick={() => setPage(page + 1)}
+          disabled={appointments.length < limit}
+        >
+          Next
         </Button>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Appointments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {appointments.map((appointment) => (
-                <TableRow key={appointment.id}>
-                  <TableCell>{appointment.clientName}</TableCell>
-                  <TableCell>{appointment.service}</TableCell>
-                  <TableCell>{appointment.date}</TableCell>
-                  <TableCell>{appointment.time}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(appointment)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(appointment.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <Dialog
-        open={isEditDialogOpen || isNewDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          setIsNewDialogOpen(open);
-          if (!open) setSelectedAppointment(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {isEditDialogOpen ? "Edit Appointment" : "New Appointment"}
-            </DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const appointment = {
-                id: selectedAppointment?.id || Date.now(),
-                clientName: formData.get("clientName") as string,
-                service: formData.get("service") as string,
-                date: formData.get("date") as string,
-                time: formData.get("time") as string,
-              };
-              handleSave(appointment);
-            }}
-          >
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="clientName" className="text-right">
-                  Client Name
-                </Label>
-                <Input
-                  id="clientName"
-                  name="clientName"
-                  defaultValue={selectedAppointment?.clientName}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="service" className="text-right">
-                  Service
-                </Label>
-                <Input
-                  id="service"
-                  name="service"
-                  defaultValue={selectedAppointment?.service}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">
-                  Date
-                </Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  defaultValue={selectedAppointment?.date}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="time" className="text-right">
-                  Time
-                </Label>
-                <Input
-                  id="time"
-                  name="time"
-                  type="time"
-                  defaultValue={selectedAppointment?.time}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit">Save</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -34,7 +34,8 @@
     "react-dom": "^18",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "trimio-for-barbers": "file:"
+    "trimio-for-barbers": "file:",
+    "zustand": "^5.0.0-rc.2"
   },
   "devDependencies": {
     "@types/node": "^20",

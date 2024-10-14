@@ -47,7 +47,7 @@ const useAuthStore = create<AuthState>()(
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, password, role: "BARBER" }),
+          body: JSON.stringify({ email, password }),
         });
 
         if (!response.ok) {
@@ -63,13 +63,24 @@ const useAuthStore = create<AuthState>()(
         });
       },
 
-      signup: async (email: string, password: string) => {
+      signup: async (
+        email: string,
+        password: string,
+        username: string,
+        phone: string
+      ) => {
         const response = await fetch("http://localhost:3003/auth/register", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, password, role: "BARBER" }),
+          body: JSON.stringify({
+            email,
+            password,
+            username,
+            phone,
+            role: "CLIENT",
+          }), // role: CLIENT en este caso
         });
 
         if (!response.ok) {
@@ -78,24 +89,36 @@ const useAuthStore = create<AuthState>()(
         }
 
         const data = await response.json();
+
+        // Aquí guardamos el access_token y el refresh_token
         set({
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
-          user: data.user,
+          user: {
+            id: data.userId,
+            email: email,
+            role: "CLIENT", // Establecemos el rol como CLIENT
+            createdAt: new Date().toISOString(),
+          },
         });
+
+        return data.message; // Devolvemos el mensaje de éxito que contiene información sobre la verificación del email
       },
 
       refreshAccessToken: async () => {
         const { refreshToken } = get();
         if (!refreshToken) throw new Error("No refresh token available");
 
-        const response = await fetch("http://localhost:3003/auth/refresh", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
+        const response = await fetch(
+          "http://localhost:3003/auth/refresh-token",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          }
+        );
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -123,7 +146,7 @@ const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "auth-storage",
+      name: "auth-storage", // Store name for persistence
     }
   )
 );

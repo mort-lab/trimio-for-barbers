@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
-import useAuthStore from "@/store/authStore";
+import { useState } from "react";
+import { CalendarIcon, FilterIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, Users, Scissors, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,148 +12,235 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  Line,
+  LineChart,
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+} from "recharts";
 
-type Appointment = {
-  id: number;
-  clientName: string;
-  service: string;
-  date: string;
-  time: string;
-};
+const weeklyCustomerData = [
+  { name: "Mon", customers: 20 },
+  { name: "Tue", customers: 30 },
+  { name: "Wed", customers: 25 },
+  { name: "Thu", customers: 40 },
+  { name: "Fri", customers: 45 },
+  { name: "Sat", customers: 50 },
+  { name: "Sun", customers: 35 },
+];
 
-type DashboardStats = {
-  appointmentsToday: number;
-  totalClients: number;
-  revenue: number;
-};
+const recurrentCustomersData = [
+  { month: "Jan", customers: 50 },
+  { month: "Feb", customers: 60 },
+  { month: "Mar", customers: 70 },
+  { month: "Apr", customers: 55 },
+  { month: "May", customers: 65 },
+  { month: "Jun", customers: 75 },
+];
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const activeBarbershop = useAuthStore((state) => state.activeBarbershop);
-  const [stats, setStats] = useState<DashboardStats>({
-    appointmentsToday: 0,
-    totalClients: 0,
-    revenue: 0,
-  });
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth");
-    } else if (user && activeBarbershop) {
-      fetchDashboardData();
-    }
-  }, [user, loading, router, activeBarbershop]);
-
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      // In a real application, you would fetch this data from your API
-      // For now, we'll use placeholder data
-      const statsData = await api.fetchWithAuth<DashboardStats>(
-        `/barbershops/${activeBarbershop?.id}/stats`
-      );
-      setStats(statsData);
-
-      const appointmentsData = await api.fetchWithAuth<Appointment[]>(
-        `/barbershops/${activeBarbershop?.id}/appointments`
-      );
-      setAppointments(appointmentsData);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
-    }
-    setIsLoading(false);
-  };
-
-  if (loading || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Scissors className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const [appointments] = useState([
+    {
+      customer: "John Doe",
+      barber: "Adam",
+      amount: 50,
+      duration: "30m",
+      services: "Haircut",
+      paid: true,
+      hour: "09:00",
+    },
+    {
+      customer: "Jane Smith",
+      barber: "Eve",
+      amount: 75,
+      duration: "45m",
+      services: "Haircut, Beard Trim",
+      paid: false,
+      hour: "10:00",
+    },
+    {
+      customer: "Bob Johnson",
+      barber: "Adam",
+      amount: 60,
+      duration: "40m",
+      services: "Haircut",
+      paid: true,
+      hour: "11:00",
+    },
+    {
+      customer: "Alice Brown",
+      barber: "Eve",
+      amount: 90,
+      duration: "60m",
+      services: "Haircut, Color",
+      paid: true,
+      hour: "13:00",
+    },
+    {
+      customer: "Charlie Davis",
+      barber: "Adam",
+      amount: 55,
+      duration: "35m",
+      services: "Beard Trim",
+      paid: false,
+      hour: "14:00",
+    },
+  ]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Welcome back, {user?.email}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div className="p-6 space-y-6 bg-background min-h-screen">
+      <h1 className="text-3xl font-bold">Welcome back</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$1,329</div>
+            <p className="text-xs text-muted-foreground">+25% from last week</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$14,321</div>
+            <p className="text-xs text-muted-foreground">
+              +225% from last month
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Appointments Today
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.appointmentsToday}</div>
+            <div className="text-2xl font-bold">21</div>
+            <p className="text-xs text-muted-foreground">
+              +4 more than yesterday
+            </p>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <Button variant="outline">
+          <CalendarIcon className="mr-2 h-4 w-4" /> Pick a date
+        </Button>
+        <div>
+          <Button variant="outline" className="mr-2">
+            Open Calendar
+          </Button>
+          <Button variant="outline">
+            <FilterIcon className="mr-2 h-4 w-4" /> Filter
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Todays Appointments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Barber</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Services</TableHead>
+                <TableHead>Paid?</TableHead>
+                <TableHead>Hour</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {appointments.map((appointment, index) => (
+                <TableRow key={index}>
+                  <TableCell>{appointment.customer}</TableCell>
+                  <TableCell>{appointment.barber}</TableCell>
+                  <TableCell>${appointment.amount}</TableCell>
+                  <TableCell>{appointment.duration}</TableCell>
+                  <TableCell>{appointment.services}</TableCell>
+                  <TableCell>{appointment.paid ? "✅" : "❌"}</TableCell>
+                  <TableCell>{appointment.hour}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Weekly Customer Report</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalClients}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Revenue (This Month)
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.revenue}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Barbershop
-            </CardTitle>
-            <Scissors className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-medium">
-              {activeBarbershop?.name || "Not selected"}
+            <ChartContainer
+              config={{
+                customers: { label: "Customers", color: "hsl(var(--chart-1))" },
+              }}
+              className="h-[200px]"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyCustomerData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="customers"
+                    stroke="var(--color-customers)"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+            <div className="mt-2 text-sm text-muted-foreground">
+              +92 New Customers
+              <br />
+              +22 New Recurrent Customers
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recurrent Customers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{
+                customers: { label: "Customers", color: "hsl(var(--chart-1))" },
+              }}
+              className="h-[200px]"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={recurrentCustomersData}>
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="customers" fill="var(--color-customers)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       </div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">Upcoming Appointments</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Client Name</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {appointments.map((appointment) => (
-              <TableRow key={appointment.id}>
-                <TableCell>{appointment.clientName}</TableCell>
-                <TableCell>{appointment.service}</TableCell>
-                <TableCell>{appointment.date}</TableCell>
-                <TableCell>{appointment.time}</TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm">
-                    <Clock className="mr-2 h-4 w-4" />
-                    Reschedule
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+
+      <Button className="w-full">See Full Analytics</Button>
     </div>
   );
 }

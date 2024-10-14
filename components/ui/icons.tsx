@@ -20,6 +20,7 @@ export const Icons = {
   analytics: BarChart,
   menu: Menu,
   logout: LogOut,
+  Google: LogOut,
   spinner: LoaderCircle,
   settings: Settings,
   barbershop: ScissorsIcon,

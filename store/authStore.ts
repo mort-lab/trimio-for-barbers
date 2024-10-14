@@ -23,7 +23,13 @@ interface AuthState {
   setRefreshToken: (token: string) => void;
   setUser: (user: User) => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    username: string,
+    phone: string
+  ) => Promise<string>;
+  googleSignup: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   logout: () => void;
   setActiveBarbershop: (barbershop: Barbershop) => void;
@@ -80,7 +86,7 @@ const useAuthStore = create<AuthState>()(
             username,
             phone,
             role: "CLIENT",
-          }), // role: CLIENT en este caso
+          }),
         });
 
         if (!response.ok) {
@@ -90,19 +96,23 @@ const useAuthStore = create<AuthState>()(
 
         const data = await response.json();
 
-        // Aquí guardamos el access_token y el refresh_token
         set({
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
           user: {
             id: data.userId,
             email: email,
-            role: "CLIENT", // Establecemos el rol como CLIENT
+            role: "CLIENT",
             createdAt: new Date().toISOString(),
           },
         });
 
-        return data.message; // Devolvemos el mensaje de éxito que contiene información sobre la verificación del email
+        return data.message;
+      },
+
+      googleSignup: async () => {
+        // Redirect to Google login
+        window.location.href = "http://localhost:3003/auth/google";
       },
 
       refreshAccessToken: async () => {
@@ -146,7 +156,7 @@ const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "auth-storage", // Store name for persistence
+      name: "auth-storage",
     }
   )
 );

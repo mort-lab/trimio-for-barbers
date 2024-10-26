@@ -20,6 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import useAuthStore from "@/store/authStore"; // Importa el authStore
+import { useRouter } from "next/navigation";
 
 interface UserProfileProps {
   onOpenSettingsDialog: () => void;
@@ -36,6 +38,14 @@ export function UserProfile({
   onOpenSettingsDialog,
   onChangeSettingsTab,
 }: UserProfileProps) {
+  const logout = useAuthStore((state) => state.logout); // Accede a la función logout
+  const router = useRouter(); // Utiliza el router para redirigir
+
+  const handleLogout = () => {
+    logout(); // Limpia el estado de autenticación
+    router.push("/login"); // Redirige al usuario a la página de login
+  };
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -110,7 +120,7 @@ export function UserProfile({
               <span>Notifications</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

@@ -96,7 +96,7 @@ export default function LoginPage() {
           variant: "default",
         });
 
-        router.push("/dashboard"); // Redirigir a la página principal
+        router.push("/admin"); // Redirigir a la página principal
       } else {
         throw new Error(data.message || "Login failed");
       }

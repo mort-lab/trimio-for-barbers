@@ -1,4 +1,3 @@
-//app/(auth)/google-callback.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -15,7 +14,7 @@ export default function GoogleCallback() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
+    const token = urlParams.get("jwt");
     const error = urlParams.get("error");
 
     if (error) {
@@ -26,11 +25,10 @@ export default function GoogleCallback() {
       });
       router.push("/login");
     } else if (token) {
-      // Decode the JWT to get user information
+      // Decode JWT to get user data
       const payload = JSON.parse(atob(token.split(".")[1]));
 
       setAccessToken(token);
-
       setRefreshToken(payload.refreshToken);
       setUser({
         id: payload.sub,
@@ -39,12 +37,23 @@ export default function GoogleCallback() {
         createdAt: new Date(payload.iat * 1000).toISOString(),
       });
 
-      toast({
-        title: "Success",
-        description: "You have successfully signed in with Google.",
-        variant: "default",
-      });
-      router.push("/dashboard");
+      // Check if the profile is incomplete (no username or phone)
+      if (!payload.username || !payload.phone) {
+        toast({
+          title: "Profile Incomplete",
+          description: "Please complete your profile.",
+          variant: "default",
+        });
+        // Redirect to the complete-profile page with the userId
+        router.push(`/complete-profile?userId=${payload.sub}`);
+      } else {
+        toast({
+          title: "Success",
+          description: "You have successfully signed in with Google.",
+          variant: "default",
+        });
+        router.push("/dashboard");
+      }
     } else {
       toast({
         title: "Error",
@@ -55,9 +64,5 @@ export default function GoogleCallback() {
     }
   }, [router, setAccessToken, setRefreshToken, setUser, toast]);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p>Processing authentication...</p>
-    </div>
-  );
+  return <p>Processing authentication...</p>;
 }

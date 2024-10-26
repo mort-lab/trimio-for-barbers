@@ -9,9 +9,18 @@ interface User {
 }
 
 interface Barbershop {
-  id: string;
-  name: string;
-  address: string;
+  barbershopId: string;
+  barbershopName: string;
+  barbershopAddress: string;
+  barbershopCity: string;
+  barbershopState: string;
+  barbershopZipCode: string;
+  barbershopLatitude: number;
+  barbershopLongitude: number;
+  barbershopImages: string[];
+  countryCode: string;
+  phoneNumber: string;
+  additionalInfo?: string;
 }
 
 interface AuthState {
@@ -33,6 +42,11 @@ interface AuthState {
   refreshAccessToken: () => Promise<void>;
   logout: () => void;
   setActiveBarbershop: (barbershop: Barbershop) => void;
+  createOrUpdateBarbershop: (
+    barbershopData: FormData,
+    barbershopId?: string
+  ) => Promise<Barbershop>;
+  fetchBarbershopDetails: (barbershopId: string) => Promise<Barbershop>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -111,8 +125,7 @@ const useAuthStore = create<AuthState>()(
       },
 
       googleSignup: async () => {
-        // Redirect to Google login
-        window.location.href = "http://localhost:3003/auth/google";
+        window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
       },
 
       refreshAccessToken: async () => {
@@ -153,6 +166,65 @@ const useAuthStore = create<AuthState>()(
 
       setActiveBarbershop: (barbershop: Barbershop) => {
         set({ activeBarbershop: barbershop });
+      },
+
+      createOrUpdateBarbershop: async (
+        barbershopData: FormData,
+        barbershopId?: string
+      ): Promise<Barbershop> => {
+        const { accessToken } = get();
+        if (!accessToken) throw new Error("No access token available");
+
+        const url = barbershopId
+          ? `http://localhost:3003/barbershops/${barbershopId}`
+          : "http://localhost:3003/barbershops";
+
+        const method = barbershopId ? "PUT" : "POST";
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: barbershopData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Failed to create/update barbershop"
+          );
+        }
+
+        const barbershop: Barbershop = await response.json();
+        set({ activeBarbershop: barbershop });
+        return barbershop;
+      },
+
+      fetchBarbershopDetails: async (
+        barbershopId: string
+      ): Promise<Barbershop> => {
+        const { accessToken } = get();
+        if (!accessToken) throw new Error("No access token available");
+
+        const response = await fetch(
+          `http://localhost:3003/barbershops/${barbershopId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Failed to fetch barbershop details"
+          );
+        }
+
+        const barbershop: Barbershop = await response.json();
+        return barbershop;
       },
     }),
     {

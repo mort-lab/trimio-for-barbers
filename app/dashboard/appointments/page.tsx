@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import AppointmentsView from "@/components/appointments/AppointmentsView";
 import CalendarView from "@/components/appointments/CalendarView";
+import CreateAppointmentButton from "@/components/appointments/appointments/CreateAppointmentButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -14,14 +15,38 @@ import {
 import { Calendar, List } from "lucide-react";
 
 const Appointments = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("appointments");
+
+  const handleAppointmentCreated = useCallback(() => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl">Appointments</CardTitle>
-        <CardDescription>Manage your barbershop appointments</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle className="text-3xl font-bold">
+            {activeTab === "appointments" ? "Appointments" : "Calendar"}
+          </CardTitle>
+          <CardDescription className="text-lg mt-1">
+            Manage your barbershop {activeTab}
+          </CardDescription>
+        </div>
+        <CreateAppointmentButton
+          onAppointmentCreated={handleAppointmentCreated}
+        />
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="appointments" className="w-full">
+        <Tabs
+          defaultValue="appointments"
+          className="w-full"
+          onValueChange={handleTabChange}
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="appointments">
               <List className="mr-2 h-4 w-4" />
@@ -32,11 +57,11 @@ const Appointments = () => {
               Calendar
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="appointments">
-            <AppointmentsView />
+          <TabsContent value="appointments" className="mt-6">
+            <AppointmentsView key={refreshKey} />
           </TabsContent>
-          <TabsContent value="calendar">
-            <CalendarView />
+          <TabsContent value="calendar" className="mt-6">
+            <CalendarView key={refreshKey} />
           </TabsContent>
         </Tabs>
       </CardContent>

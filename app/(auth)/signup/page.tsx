@@ -105,20 +105,11 @@ export default function RegisterPage() {
   const handleGoogleSignup = async () => {
     setIsLoading(true);
     try {
-      await googleSignup();
-      toast({
-        title: "Google Sign Up Successful",
-        description: "You have successfully signed up with Google.",
-        variant: "default",
-      });
-      router.push("/dashboard");
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Google sign up failed. Please try again.",
+        description: `Google sign up failed. Please try again.${error}`,
         variant: "destructive",
       });
     } finally {

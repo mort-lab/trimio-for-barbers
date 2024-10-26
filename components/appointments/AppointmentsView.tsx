@@ -1,7 +1,16 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import AppointmentsTable from "./appointments/AppointmentsTable";
 
 const AppointmentsView = () => {
-  return <div>AppointmentsView AppointmentsView</div>;
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  return (
+    <div className="space-y-4">
+      <AppointmentsTable key={refreshKey} />
+    </div>
+  );
 };
 
 export default AppointmentsView;

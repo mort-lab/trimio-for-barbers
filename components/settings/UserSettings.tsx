@@ -174,13 +174,15 @@ const UserSettings = () => {
                   disabled
                 />
               </div>
+
               {showUpdateButton && (
                 <Button onClick={handleUpdateProfile} disabled={isLoading}>
                   {isLoading ? "Updating..." : "Update Profile"}
                 </Button>
               )}
             </form>
-            <div className="mt-6">
+            <div className="mt-6 justify-between flex">
+              <Button className="bg-primary text-white">Change Password</Button>
               <Dialog
                 open={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}

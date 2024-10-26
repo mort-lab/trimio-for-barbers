@@ -24,16 +24,16 @@ export default function Settings() {
     <div className="p-6 space-y-6 bg-background min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <Tabs defaultValue="user">
+      <Tabs defaultValue="barbershop">
         <TabsList>
-          <TabsTrigger value="user">User Settings</TabsTrigger>
           <TabsTrigger value="barbershop">Barbershop Settings</TabsTrigger>
+          <TabsTrigger value="user">User Settings</TabsTrigger>
         </TabsList>
-        <TabsContent value="user">
-          <UserSettings />
-        </TabsContent>
         <TabsContent value="barbershop">
           <BarbershopSettings />
+        </TabsContent>
+        <TabsContent value="user">
+          <UserSettings />
         </TabsContent>
       </Tabs>
     </div>

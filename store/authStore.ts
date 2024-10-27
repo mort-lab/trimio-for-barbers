@@ -99,7 +99,7 @@ const useAuthStore = create<AuthState>()(
             password,
             username,
             phone,
-            role: "CLIENT",
+            role: "BARBER",
           }),
         });
 
@@ -116,7 +116,7 @@ const useAuthStore = create<AuthState>()(
           user: {
             id: data.userId,
             email: email,
-            role: "CLIENT",
+            role: "BARBER",
             createdAt: new Date().toISOString(),
           },
         });

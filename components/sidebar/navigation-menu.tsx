@@ -22,53 +22,53 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 const navItems = [
   {
     title: "Barbershop",
-    url: "#",
+    url: "/admin",
     icon: ScissorsIcon,
     isActive: true,
     items: [
-      { title: "Overview", url: "#" },
-      { title: "Analytics", url: "#" },
+      { title: "Overview", url: "/admin" },
+      { title: "Analytics", url: "/admin/analytics" },
     ],
   },
   {
     title: "Appointments",
-    url: "#",
+    url: "/admin/appointments",
     icon: Calendar,
     items: [
-      { title: "Schedule", url: "#" },
-      { title: "Calendar", url: "#" },
+      { title: "Schedule", url: "/admin/appointments" },
+      { title: "Calendar", url: "/admin/appointments/calendar" },
     ],
   },
   {
-    title: "Services",
-    url: "#",
+    title: "Payments",
+    url: "/admin/payments",
     icon: DollarSign,
     items: [
-      { title: "Manage Services", url: "#" },
-      { title: "Pricing", url: "#" },
+      { title: "Manage Payments", url: "/admin/payments" },
+      { title: "Pricing", url: "/admin/payments/pricing" },
     ],
   },
   {
     title: "Staff",
-    url: "#",
+    url: "/admin/staff",
     icon: Users,
     items: [
-      { title: "Barbers", url: "#" },
-      { title: "Schedules", url: "#" },
+      { title: "Barbers", url: "/admin/staff/barbers" },
+      { title: "Schedules", url: "/admin/staff/schedules" },
     ],
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/admin/settings",
     icon: Settings2,
     items: [
-      { title: "Barbershop Info", url: "#" },
-      { title: "Account", url: "#" },
-      { title: "Billing", url: "#" },
+      { title: "Barbershop", url: "/admin/settings" },
+      // { title: "Account", url: "/admin/settings/account" },
     ],
   },
 ];
@@ -89,7 +89,8 @@ export function NavigationMenu() {
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton tooltip={item.title}>
                   {item.icon && <item.icon />}
-                  <span>{item.title}</span>
+                  {/* Añadimos la clase 'font-bold' para hacer el texto en negrita */}
+                  <span className="font-semibold">{item.title}</span>
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
               </CollapsibleTrigger>
@@ -98,9 +99,9 @@ export function NavigationMenu() {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <Link href={subItem.url}>
                           <span>{subItem.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

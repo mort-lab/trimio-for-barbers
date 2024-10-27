@@ -34,7 +34,7 @@ const PasswordInput = ({
         autoComplete={autoComplete}
         autoCorrect="off"
         required
-        className="pr-10 h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+        className="pr-10 h-11 rounded-lg border border-input bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
       <Button
         type="button"
@@ -44,9 +44,9 @@ const PasswordInput = ({
         onClick={() => setShowPassword(!showPassword)}
       >
         {showPassword ? (
-          <EyeOff className="h-4 w-4 text-gray-500" />
+          <EyeOff className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <Eye className="h-4 w-4 text-gray-500" />
+          <Eye className="h-4 w-4 text-muted-foreground" />
         )}
       </Button>
     </div>
@@ -102,17 +102,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 sm:p-8 w-[440px]">
+    <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 sm:p-8 w-[440px]">
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold">Sign In</h1>
-          <p className="text-gray-600 text-sm">Enter your email and password</p>
+          <p className="text-muted-foreground text-sm">
+            Enter your email and password
+          </p>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center justify-center space-x-2 h-11 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          className="w-full flex items-center justify-center space-x-2 h-11 rounded-lg border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
         >
           <svg
             className="h-5 w-5"
@@ -142,10 +144,10 @@ export default function LoginPage() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
+            <div className="w-full border-t border-border"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">or</span>
+            <span className="px-2 bg-background text-muted-foreground">or</span>
           </div>
         </div>
 
@@ -153,7 +155,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <Label
               htmlFor="email"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-foreground"
             >
               Email*
             </Label>
@@ -167,13 +169,13 @@ export default function LoginPage() {
               autoCorrect="off"
               disabled={isLoading}
               required
-              className="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+              className="h-11 rounded-lg border border-input bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
           <div className="space-y-2">
             <Label
               htmlFor="password"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-foreground"
             >
               Password*
             </Label>
@@ -189,13 +191,13 @@ export default function LoginPage() {
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
-              className="form-checkbox h-4 w-4 text-purple-600"
+              className="form-checkbox h-4 w-4 text-primary"
             />
-            <span className="text-sm text-gray-700">Keep me logged in</span>
+            <span className="text-sm text-foreground">Keep me logged in</span>
           </label>
           <Link
             href="/forgot-password"
-            className="text-sm font-medium text-purple-600 hover:text-purple-500"
+            className="text-sm font-medium text-primary hover:text-primary/80"
           >
             Forget password?
           </Link>
@@ -203,7 +205,7 @@ export default function LoginPage() {
 
         <Button
           type="submit"
-          className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg"
+          className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -232,11 +234,11 @@ export default function LoginPage() {
           )}
         </Button>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-muted-foreground">
           Not registered yet?{" "}
           <Link
             href="/signup"
-            className="font-medium text-purple-600 hover:text-purple-500"
+            className="font-medium text-primary hover:text-primary/80"
           >
             Create an Account
           </Link>

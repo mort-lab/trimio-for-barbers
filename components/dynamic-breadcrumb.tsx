@@ -10,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import React from "react";
+import Link from "next/link";
 
 export function DynamicBreadcrumb() {
   const pathname = usePathname();
@@ -19,7 +20,9 @@ export function DynamicBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem className="hidden md:block">
-          <BreadcrumbLink href="/admin">Barbershop Management</BreadcrumbLink>
+          <BreadcrumbLink href="/admin" as={Link}>
+            Trimio4Barbers
+          </BreadcrumbLink>
         </BreadcrumbItem>
         {pathSegments.slice(1).map((segment, index) => {
           const href = `/${pathSegments.slice(0, index + 2).join("/")}`;
@@ -31,11 +34,15 @@ export function DynamicBreadcrumb() {
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>
-                    {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                    {segment === "admin"
+                      ? "Overview"
+                      : segment.charAt(0).toUpperCase() + segment.slice(1)}
                   </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink href={href}>
-                    {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                  <BreadcrumbLink href={href} as={Link}>
+                    {segment === "admin"
+                      ? "Overview"
+                      : segment.charAt(0).toUpperCase() + segment.slice(1)}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
